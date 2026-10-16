@@ -2,35 +2,35 @@
 
 Exploratory data analysis, feature engineering, and a random forest churn model for an energy utility's small and medium business customers.
 
-The notebooks come from the BCG data science virtual experience program, and the notebook text refers to the client as PowerCo, an energy utility.
-The business question is whether customer churn is driven by price sensitivity, and whether churn can be predicted from customer and pricing data.
+The notebooks come from the BCG data science virtual experience program, where the client, an energy utility, is called PowerCo.
+The question is whether customer churn is driven by price sensitivity, and whether churn can be predicted from customer and pricing data.
 
 ## Data
 
-Four CSV files are committed to the repository so the notebooks run without any external download.
+Four CSV files are committed to the repository, so the notebooks run without any external download.
 
-1. `client_data.csv` - 14,606 customers, 26 columns, no missing values.
-Columns cover consumption (`cons_12m`, `cons_gas_12m`, `cons_last_month`, `imp_cons`), forecasts (`forecast_cons_12m`, `forecast_price_energy_off_peak`, and similar), margins (`margin_gross_pow_ele`, `margin_net_pow_ele`, `net_margin`), contract dates (`date_activ`, `date_end`, `date_modif_prod`, `date_renewal`), categorical fields (`channel_sales`, `origin_up`, `has_gas`), and the target `churn`.
-2. `price_data.csv` - 193,002 rows, 8 columns, no missing values.
-It holds monthly energy and power prices per customer for January to December 2015, split into off-peak, peak, and mid-peak, variable and fixed.
+1. `client_data.csv` has 14,606 customers in 26 columns, with no missing values.
+The columns cover consumption (`cons_12m`, `cons_gas_12m`, `cons_last_month`, `imp_cons`), forecasts (`forecast_cons_12m`, `forecast_price_energy_off_peak`, and similar), margins (`margin_gross_pow_ele`, `margin_net_pow_ele`, `net_margin`), contract dates (`date_activ`, `date_end`, `date_modif_prod`, `date_renewal`), categorical fields (`channel_sales`, `origin_up`, `has_gas`), and the target `churn`.
+2. `price_data.csv` has 193,002 rows in 8 columns, also with no missing values.
+It holds monthly energy and power prices per customer for January to December 2015, split into off-peak, peak and mid-peak, each with a variable and a fixed part.
 Most companies have all 12 monthly rows, and a small number have between 7 and 11.
-3. `churn_data_modeling.csv` - the merged client and price-feature table written out at the end of the EDA notebook, and the input to the modelling notebook.
-4. `out_of_sample_data_with_predictions.csv` - the 3,652 held-out test rows with the model's predicted `churn` label and `churn_probability`.
+3. `churn_data_modeling.csv` is the merged table of client data and price features that the EDA notebook writes at the end, and it is the input to the modelling notebook.
+4. `out_of_sample_data_with_predictions.csv` holds the 3,652 held-out test rows with the model's predicted `churn` label and `churn_probability`.
 
-Identifiers in `channel_sales` and `origin_up` are hashed strings in the source data, so the categories are anonymous.
+The values in `channel_sales` and `origin_up` are hashed strings in the source data, so the categories are anonymous.
 
 ## Notebooks
 
 ### `Exploratory_Data_Analysis_BCG.ipynb`
 
-Loads the client and price data, converts the date columns to datetime, checks shapes, descriptive statistics, and missing values.
-Plots the churn split, consumption and forecast distributions by churn, and the distributions of the six price columns.
-Builds price-sensitivity features by averaging each price column per customer over the full year, the last 6 months, and the last 3 months, and adds combined off-peak, peak, and mid-peak prices (variable plus fixed).
-Correlates those price features against churn, then merges the client data with the price features and writes `churn_data_modeling.csv`.
+This notebook loads the client and price data, converts the date columns to datetime, and checks shapes, descriptive statistics and missing values.
+It then plots the churn split, the consumption and forecast distributions by churn, and the distributions of the six price columns.
+For price sensitivity, it averages each price column per customer over the full year, the last 6 months and the last 3 months, and adds combined off-peak, peak and mid-peak prices (variable plus fixed).
+Those price features are correlated against churn, and finally the client data is merged with them and written out as `churn_data_modeling.csv`.
 
 ### `Feature_engineering_BCG.ipynb`
 
-Starts from `churn_data_modeling.csv` and adds further features.
+Starts from `churn_data_modeling.csv` and adds more features:
 
 - `offpeak_diff_dec_january_energy` and `offpeak_diff_dec_january_power`, the December minus January off-peak price difference per customer.
 - Mean differences between off-peak, peak, and mid-peak prices, for both the variable and fixed components.
@@ -42,24 +42,22 @@ Starts from `churn_data_modeling.csv` and adds further features.
 - `num_years_antig` and `forecast_cons_year` dropped because they correlate highly with other features.
 
 The final feature matrix is 14,605 rows by 71 columns.
-It is split 75/25 into 10,953 training rows and 3,652 test rows with `random_state=42`, and a `RandomForestClassifier` with 1,000 trees is fitted.
-Feature importances are plotted, and the test set predictions and probabilities are written to `out_of_sample_data_with_predictions.csv`.
+It is split 75/25 into 10,953 training rows and 3,652 test rows with `random_state=42`, and a `RandomForestClassifier` with 1,000 trees is fitted on the training part.
+The notebook plots the feature importances and writes the test set predictions and probabilities to `out_of_sample_data_with_predictions.csv`.
 
-## Key findings
+## Findings
 
 These are the results recorded in the notebooks.
 
-1. Churn is imbalanced.
-90.28 percent of customers were retained and 9.72 percent churned.
-2. The correlation between the engineered price features and churn is very low, so the analysis concludes that churn is not mainly explained by price changes.
+1. Churn is imbalanced: 90.28 percent of customers were retained and 9.72 percent churned.
+2. The engineered price features have a very low correlation with churn, so the analysis concludes that price changes are not the main explanation for churn.
 3. Churn rate falls as tenure grows.
-It is highest at a tenure of 3 years (14.4 percent), 2 years (13.3 percent), and 4 years (12.6 percent), and lowest at 10 years (2.0 percent) and 9 years (2.4 percent).
-4. Customers who also buy gas churn less.
-The churn rate is 8.19 percent for `has_gas = 1` against 10.05 percent for `has_gas = 0`.
-5. The random forest scores 0.9028 accuracy, 1.0 precision, and 0.0483 recall on the test set.
-The confusion matrix is 18 true positives, 0 false positives, 3,279 true negatives, and 355 false negatives.
-Accuracy is close to the 90.28 percent you would get by predicting "no churn" for everyone, and recall is very low, so the model finds almost none of the customers who actually churn.
-This is the expected behaviour of an untuned classifier on an imbalanced target, and it is the main thing to address before the model is useful.
+It is highest at a tenure of 3 years (14.4 percent), 2 years (13.3 percent) and 4 years (12.6 percent), and lowest at 10 years (2.0 percent) and 9 years (2.4 percent).
+4. Customers who also buy gas churn less, at 8.19 percent for `has_gas = 1` against 10.05 percent for `has_gas = 0`.
+5. On the test set the random forest scores 0.9028 accuracy, 1.0 precision and 0.0483 recall.
+The confusion matrix is 18 true positives, 0 false positives, 3,279 true negatives and 355 false negatives.
+That accuracy is about what you would get by predicting "no churn" for everyone (90.28 percent), and with recall that low the model finds almost none of the customers who actually churn.
+An untuned classifier on an imbalanced target usually behaves like this, and fixing it is the first thing to do before the model is useful.
 
 ## Running the notebooks
 
@@ -73,8 +71,7 @@ pip install pandas numpy seaborn matplotlib scikit-learn jupyter
 jupyter notebook
 ```
 
-Run `Exploratory_Data_Analysis_BCG.ipynb` first, since it produces `churn_data_modeling.csv`, then `Feature_engineering_BCG.ipynb`.
+Run `Exploratory_Data_Analysis_BCG.ipynb` first, since it produces `churn_data_modeling.csv`, and then `Feature_engineering_BCG.ipynb`.
 A copy of `churn_data_modeling.csv` is already committed, so the modelling notebook can also be run on its own.
 
-Cell outputs have been stripped from both notebooks to keep the repository small.
-Re-run the notebooks to regenerate the plots and printed results.
+Cell outputs have been stripped from both notebooks to keep the repository small, so re-run them to regenerate the plots and printed results.
